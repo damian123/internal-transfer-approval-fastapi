@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "blackridge-approval-service-demo"
+version = "0.1.0"
+description = "Synthetic FastAPI demonstration of auditable, idempotent internal transfer approvals"
+authors = ["Lars Schouw"]
+readme = "README.md"
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+alembic = "^1.16.0"
+fastapi = "^0.116.0"
+psycopg = { version = "^3.2.0", extras = ["binary"] }
+pydantic = "^2.11.0"
+sqlalchemy = "^2.0.0"
+uvicorn = { version = "^0.35.0", extras = ["standard"] }
+
+[tool.poetry.group.dev.dependencies]
+httpx = "^0.28.0"
+mypy = "^1.17.0"
+pytest = "^8.4.0"
+ruff = "^0.12.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,29 @@
+name: Verify evidence
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: snok/install-poetry@v1
+        with:
+          version: "1.8.5"
+      - run: poetry install --no-interaction
+      - run: poetry run ruff check app migrations scripts tests
+      - run: poetry run mypy app scripts
+      - run: poetry run pytest
+      - name: Confirm evidence manifest
+        run: |
+          ./scripts/build-evidence-manifest.sh
+          git diff --exit-code -- MANIFEST.sha256
