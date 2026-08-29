@@ -11,6 +11,23 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+psycopg://approval:approval@localhost:5432/approval_test
+      POSTGRES_TEST_DATABASE_URL: postgresql+psycopg://approval:approval@localhost:5432/approval_test
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: approval_test
+          POSTGRES_USER: approval
+          POSTGRES_PASSWORD: approval
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U approval -d approval_test"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,11 +35,14 @@ jobs:
           python-version: "3.12"
       - uses: snok/install-poetry@v1
         with:
-          version: "1.8.5"
+          version: "2.1.3"
       - run: poetry install --no-interaction
+      - run: poetry run alembic upgrade head
+      - run: poetry run alembic check
       - run: poetry run ruff check app migrations scripts tests
       - run: poetry run mypy app scripts
       - run: poetry run pytest
+      - run: poetry run pip-audit --local --skip-editable
       - name: Confirm evidence manifest
         run: |
           ./scripts/build-evidence-manifest.sh

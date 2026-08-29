@@ -72,6 +72,26 @@ def test_two_independent_approvals_are_required(client: TestClient) -> None:
     assert len(after_second["approvals"]) == 2
 
 
+def test_third_approval_is_not_accepted(client: TestClient) -> None:
+    transfer = create_transfer(client)
+    approve(client, str(transfer["id"]), "risk.approver")
+    approve(client, str(transfer["id"]), "finance.approver")
+
+    response = client.post(
+        f"/transfers/{transfer['id']}/decisions",
+        json={
+            "approver": "operations.approver",
+            "decision": "approve",
+            "reason": "A third decision must not be appended",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "transfer_not_pending"
+    observed = client.get(f"/transfers/{transfer['id']}").json()
+    assert len(observed["approvals"]) == 2
+
+
 def test_rejection_is_final(client: TestClient) -> None:
     transfer = create_transfer(client)
     rejected = client.post(
@@ -128,6 +148,27 @@ def test_execution_replay_is_duplicate_safe(client: TestClient) -> None:
     assert replay.headers["Idempotent-Replay"] == "true"
     assert replay.json()["id"] == first.json()["id"]
     assert len(replay.json()["executions"]) == 1
+
+
+def test_different_execution_key_cannot_create_a_second_attempt(client: TestClient) -> None:
+    transfer = create_transfer(client)
+    approve(client, str(transfer["id"]), "risk.approver")
+    approve(client, str(transfer["id"]), "finance.approver")
+
+    first = client.post(
+        f"/transfers/{transfer['id']}/execute",
+        headers={"Idempotency-Key": "execution-primary"},
+    )
+    conflicting = client.post(
+        f"/transfers/{transfer['id']}/execute",
+        headers={"Idempotency-Key": "execution-different"},
+    )
+
+    assert first.status_code == 200
+    assert conflicting.status_code == 409
+    assert conflicting.json()["code"] == "transfer_already_executed"
+    observed = client.get(f"/transfers/{transfer['id']}").json()
+    assert len(observed["executions"]) == 1
 
 
 def test_execution_key_cannot_cross_transfers(client: TestClient) -> None:

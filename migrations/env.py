@@ -14,7 +14,9 @@ if config.config_file_name is not None:
 database_url = os.getenv("DATABASE_URL")
 configured_url = config.get_main_option("sqlalchemy.url")
 if database_url and configured_url == "sqlite:///./approval-service.db":
-    config.set_main_option("sqlalchemy.url", database_url)
+    # Alembic stores main options in ConfigParser, where a literal percent sign is
+    # interpolation syntax. SQLAlchemy URLs commonly contain percent-encoded passwords.
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 

@@ -1,7 +1,9 @@
 {
   "schema_version": "1.0",
   "owner": "Lars Schouw",
-  "reviewed_on": "2026-08-28",
+  "repository_account": "damian123",
+  "identity_note": "Published under the GitHub account damian123; commits may use the display name Damian.",
+  "reviewed_on": "2026-08-29",
   "license": "MIT",
   "artifact": {
     "id": "E-CODE-005",
@@ -9,16 +11,19 @@
     "source_path": ".",
     "publication_status": "public",
     "public_url": "https://github.com/damian123/internal-transfer-approval-fastapi",
-    "verification_command": "poetry install --no-interaction && poetry run ruff check app migrations scripts tests && poetry run mypy app scripts && poetry run pytest",
-    "expected_test_count": 9,
+    "verification_command": "poetry install --no-interaction && poetry run alembic upgrade head && poetry run alembic check && poetry run ruff check app migrations scripts tests && poetry run mypy app scripts && poetry run pytest && poetry run pip-audit --local --skip-editable",
+    "expected_test_count": 18,
     "claims_supported": [
       "Python 3.12 and FastAPI",
       "Pydantic and SQLAlchemy",
       "Alembic migrations",
       "separation of duties",
       "two-person approval",
-      "idempotent execution",
-      "database constraints"
+      "idempotent synthetic execution records",
+      "PostgreSQL row-lock concurrency control",
+      "single execution per transfer",
+      "database constraints",
+      "dependency vulnerability audit"
     ],
     "evidence_files": [
       "README.md",

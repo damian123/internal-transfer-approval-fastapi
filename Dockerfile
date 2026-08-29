@@ -6,9 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir poetry==1.8.5
+RUN pip install --no-cache-dir --upgrade pip==26.2.1 poetry==2.1.3
 COPY pyproject.toml poetry.lock* ./
-RUN poetry install --only main --no-interaction --no-ansi
+RUN poetry install --only main --no-root --no-interaction --no-ansi
 
 COPY app ./app
 COPY alembic.ini ./

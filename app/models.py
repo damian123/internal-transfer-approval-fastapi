@@ -21,6 +21,12 @@ def now_utc() -> datetime:
     return datetime.now(UTC)
 
 
+def enum_values(enum_type: type[StrEnum]) -> list[str]:
+    """Persist public enum values instead of Python member names."""
+
+    return [member.value for member in enum_type]
+
+
 class TransferStatus(StrEnum):
     SUBMITTED = "submitted"
     APPROVED = "approved"
@@ -37,6 +43,10 @@ class TransferRequest(Base):
     __tablename__ = "transfer_requests"
     __table_args__ = (
         CheckConstraint("amount > 0", name="ck_transfer_amount_positive"),
+        CheckConstraint(
+            "status IN ('submitted', 'approved', 'rejected', 'completed')",
+            name="ck_transfer_status_valid",
+        ),
         UniqueConstraint("client_request_id", name="uq_transfer_client_request_id"),
     )
 
@@ -49,7 +59,17 @@ class TransferRequest(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     purpose: Mapped[str] = mapped_column(String(500), nullable=False)
     status: Mapped[TransferStatus] = mapped_column(
-        Enum(TransferStatus, native_enum=False), default=TransferStatus.SUBMITTED, nullable=False
+        Enum(
+            TransferStatus,
+            name="transfer_status",
+            native_enum=False,
+            create_constraint=False,
+            values_callable=enum_values,
+            length=20,
+            validate_strings=True,
+        ),
+        default=TransferStatus.SUBMITTED,
+        nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(
@@ -67,6 +87,10 @@ class TransferRequest(Base):
 class ApprovalDecision(Base):
     __tablename__ = "approval_decisions"
     __table_args__ = (
+        CheckConstraint(
+            "decision IN ('approve', 'reject')",
+            name="ck_approval_decision_valid",
+        ),
         UniqueConstraint("transfer_id", "approver", name="uq_approval_transfer_approver"),
     )
 
@@ -76,7 +100,16 @@ class ApprovalDecision(Base):
     )
     approver: Mapped[str] = mapped_column(String(120), nullable=False)
     decision: Mapped[ApprovalDecisionType] = mapped_column(
-        Enum(ApprovalDecisionType, native_enum=False), nullable=False
+        Enum(
+            ApprovalDecisionType,
+            name="approval_decision_type",
+            native_enum=False,
+            create_constraint=False,
+            values_callable=enum_values,
+            length=20,
+            validate_strings=True,
+        ),
+        nullable=False,
     )
     reason: Mapped[str] = mapped_column(String(500), nullable=False)
     decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
@@ -86,7 +119,10 @@ class ApprovalDecision(Base):
 
 class ExecutionAttempt(Base):
     __tablename__ = "execution_attempts"
-    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_execution_idempotency_key"),)
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_execution_idempotency_key"),
+        UniqueConstraint("transfer_id", name="uq_execution_transfer_id"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     transfer_id: Mapped[UUID] = mapped_column(
