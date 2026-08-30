@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "blackridge-approval-service-demo"
+name = "internal-transfer-approval-fastapi"
 version = "0.1.0"
 description = "Synthetic FastAPI demonstration of auditable, idempotent internal transfer approvals"
 authors = ["Lars Schouw"]
